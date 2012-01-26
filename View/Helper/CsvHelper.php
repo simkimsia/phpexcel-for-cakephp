@@ -69,7 +69,7 @@ class CsvHelper extends AppHelper {
         header('Content-Disposition: attachment;filename="'.$title.'.csv"'); 
         header('Cache-Control: max-age=0'); 
 		$this->writer = PHPExcel_IOFactory::createWriter($this->objPHPExcel, 'CSV');
-        $this->writer->setTempDir(TMP); 
+        //$this->writer->setTempDir(TMP); 
         $this->writer->save('php://output'); 
     } 
 }

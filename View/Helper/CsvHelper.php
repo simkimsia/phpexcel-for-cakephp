@@ -1,17 +1,19 @@
 <?php
-App::uses('PHPExcel', 'PhpExcel.Vendor/PhpExcel.php');
-App::uses('PHPExcel_Writer_CSV', 'PhpExcel.Vendor/PhpExcel/Writer/CSV.php');
+include(APP . DS . 'Plugin' . DS . 'PhpExcel' . DS . 'Vendor' . DS . 'PhpExcel' . DS . 'IOFactory.php');
+include(APP . DS . 'Plugin' . DS . 'PhpExcel' . DS . 'Vendor' . DS . 'PhpExcel' . DS . 'PHPExcel.php');
 
 class CsvHelper extends AppHelper { 
      
-    var $csv; 
+	var $objPHPExcel;
+    var $writer; 
     var $sheet; 
     var $data; 
     var $blacklist = array(); 
      
     public function csvHelper() { 
-        $this->csv = new PHPExcel(); 
-        $this->sheet = $this->csv->getActiveSheet(); 
+		$this->objPHPExcel = new PHPExcel();
+        $this->writer = PHPExcel_IOFactory::createWriter($this->objPHPExcel, 'CSV');
+        $this->sheet = $this->objPHPExcel->getActiveSheet(); 
         $this->sheet->getDefaultStyle()->getFont()->setName('Verdana'); 
     } 
                   
@@ -66,9 +68,9 @@ class CsvHelper extends AppHelper {
         header("Content-type: text/csv");  
         header('Content-Disposition: attachment;filename="'.$title.'.csv"'); 
         header('Cache-Control: max-age=0'); 
-        $objWriter = new PHPExcel_Writer_CSV($this->csv); 
-        $objWriter->setTempDir(TMP); 
-        $objWriter->save('php://output'); 
+		$this->writer = PHPExcel_IOFactory::createWriter($this->objPHPExcel, 'CSV');
+        $this->writer->setTempDir(TMP); 
+        $this->writer->save('php://output'); 
     } 
 }
 

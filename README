@@ -1,0 +1,6 @@
+Currently only the CsvHelper is working. kind of.
+
+Works with PhpExcel 1.7.6
+
+References the git submodule from https://github.com/clariondoor/PHPExcel using the git readaccess of git://github.com/clariondoor/PHPExcel.git
+

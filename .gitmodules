@@ -1,0 +1,3 @@
+[submodule "Vendor/PhpExcel"]
+	path = Vendor/PhpExcel
+	url = git://github.com/clariondoor/PHPExcel.git

@@ -1,52 +1,67 @@
 <?php
-include(APP . DS . 'Plugin' . DS . 'PhpExcel' . DS . 'Vendor' . DS . 'PhpExcel' . DS . 'IOFactory.php');
-include(APP . DS . 'Plugin' . DS . 'PhpExcel' . DS . 'Vendor' . DS . 'PhpExcel' . DS . 'PHPExcel.php');
+include_once(APP . DS . 'Plugin' . DS . 'PhpExcel' . DS . 'Vendor' . DS . 'PhpExcel' . DS . 'IOFactory.php');
+include_once(APP . DS . 'Plugin' . DS . 'PhpExcel' . DS . 'Vendor' . DS . 'PhpExcel' . DS . 'PHPExcel.php');
 
 class CsvHelper extends AppHelper { 
      
 	var $objPHPExcel;
+	var $title;
     var $writer; 
     var $sheet; 
     var $data; 
     var $blacklist = array(); 
      
-    public function csvHelper() { 
+    public function csvHelper() {
+	$this->log('run this'); 
 		$this->objPHPExcel = new PHPExcel();
-        $this->writer = PHPExcel_IOFactory::createWriter($this->objPHPExcel, 'CSV');
-        $this->sheet = $this->objPHPExcel->getActiveSheet(); 
-        $this->sheet->getDefaultStyle()->getFont()->setName('Verdana'); 
+		$this->objPHPExcel->setActiveSheetIndex(0);
+        //$this->objPHPExcel->getActiveSheet() = $this->objPHPExcel->getActiveSheet(); 
     } 
                   
-    function generate(&$data, $title = 'Report') { 
-         $this->data =& $data; 
-         $this->_title($title); 
-         $this->_headers(); 
-         $this->_rows(); 
-         $this->_output($title); 
-         return true; 
+    public function create($title = 'Report') { 
+         $this->title = $title; 
     } 
+
+	public function end() {
+		header("Content-type: text/csv");  
+        header('Content-Disposition: attachment;filename="'.$this->title.'.csv"'); 
+        header('Cache-Control: max-age=0'); 
+
+		$this->writer = PHPExcel_IOFactory::createWriter($this->objPHPExcel, 'CSV');
+	        
+        
+        $this->writer->save('php://output'); 
+		
+	}
+	
+	public function setCellValue($coordinates, $value) {
+		return $this->objPHPExcel->getActiveSheet()->setCellValue($coordinates, $value);
+	}
      
     function _title($title) { 
-        $this->sheet->setCellValue('A2', $title); 
-        $this->sheet->getStyle('A2')->getFont()->setSize(14); 
-        $this->sheet->getRowDimension('2')->setRowHeight(23); 
+        $this->objPHPExcel->getActiveSheet()->setCellValue('A2', $title); 
     } 
 
     function _headers() { 
         $i=0; 
+
+		$this->log($this->data);
+
         foreach ($this->data[0] as $field => $value) { 
             if (!in_array($field,$this->blacklist)) { 
+	
                 $columnName = Inflector::humanize($field); 
-                $this->sheet->setCellValueByColumnAndRow($i++, 4, $columnName); 
+                $this->objPHPExcel->getActiveSheet()->getCellByColumnAndRow($i++, 4, $columnName); 
+
             } 
         } 
 		/**
-        $this->sheet->getStyle('A4')->getFont()->setBold(true); 
-        $this->sheet->getStyle('A4')->getFill()->setFillType(PHPExcel_Style_Fill::FILL_SOLID); 
-        $this->sheet->getStyle('A4')->getFill()->getStartColor()->setRGB('969696'); 
-        $this->sheet->duplicateStyle( $this->sheet->getStyle('A4'), 'B4:'.$this->sheet->getHighestColumn().'4'); 
+        $this->objPHPExcel->getActiveSheet()->getStyle('A4')->getFont()->setBold(true); 
+        $this->objPHPExcel->getActiveSheet()->getStyle('A4')->getFill()->setFillType(PHPExcel_Style_Fill::FILL_SOLID); 
+        $this->objPHPExcel->getActiveSheet()->getStyle('A4')->getFill()->getStartColor()->setRGB('969696'); 
+        $this->objPHPExcel->getActiveSheet()->duplicateStyle( $this->objPHPExcel->getActiveSheet()->getStyle('A4'), 'B4:'.$this->objPHPExcel->getActiveSheet()->getHighestColumn().'4'); 
         for ($j=1; $j<$i; $j++) { 
-            $this->sheet->getColumnDimension(PHPExcel_Cell::stringFromColumnIndex($j))->setAutoSize(true); 
+            $this->objPHPExcel->getActiveSheet()->getColumnDimension(PHPExcel_Cell::stringFromColumnIndex($j))->setAutoSize(true); 
         } 
         ***/
     } 
@@ -57,18 +72,37 @@ class CsvHelper extends AppHelper {
             $j=0; 
             foreach ($row as $field => $value) { 
                 if(!in_array($field,$this->blacklist)) { 
-                    $this->sheet->setCellValueByColumnAndRow($j++,$i, $value); 
+                    $this->objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($j++,$i, $value); 
                 } 
             } 
             $i++; 
         } 
     } 
              
-    function _output($title) { 
-        header("Content-type: text/csv");  
-        header('Content-Disposition: attachment;filename="'.$title.'.csv"'); 
-        header('Cache-Control: max-age=0'); 
-		$this->writer = PHPExcel_IOFactory::createWriter($this->objPHPExcel, 'CSV');
+    function _output($title, $type = 'CSV') { 
+		if ($type == 'Excel5') {
+			header("Content-type: application/vnd.ms-excel");  
+	        header('Content-Disposition: attachment;filename="'.$title.'.xls"'); 
+	        header('Cache-Control: max-age=0'); 
+			$this->writer = PHPExcel_IOFactory::createWriter($this->objPHPExcel, 'Excel5');
+			
+			
+		} else if ($type == 'CSV') {
+			header("Content-type: text/csv");  
+	        header('Content-Disposition: attachment;filename="'.$title.'.csv"'); 
+	        header('Cache-Control: max-age=0'); 
+	
+			$this->objPHPExcel->getActiveSheet()->setCellValue('A1', 'First Name')
+			                              ->setCellValue('B1', 'Last Name')
+			                              ->setCellValue('C1', 'Age')
+			                              ->setCellValue('D1', 'Date of birth')
+			                              ->setCellValue('E1', 'Salary');
+	
+			$this->writer = PHPExcel_IOFactory::createWriter($this->objPHPExcel, 'CSV');
+	        
+		}
+		
+		$this->log($this->writer);
         //$this->writer->setTempDir(TMP); 
         $this->writer->save('php://output'); 
     } 
